@@ -35,6 +35,7 @@ export default function AvatarFBX({ bvhQueue = [] }: { bvhQueue?: string[] }) {
     camera.position.y = 5;
     camera.position.z = 20;
     camera.lookAt(0, 0, 0);
+    const gltfLoader = new GLTFLoader();
 
 
     let renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
@@ -63,6 +64,23 @@ export default function AvatarFBX({ bvhQueue = [] }: { bvhQueue?: string[] }) {
     // avatar.scale.set(5, 5, 5); // Scale avatar to double size
     avatar.position.set(0, -6, 0); // Adjust position to be on
     scene.add(avatar);
+
+    // AVATAR BUT GLB FILE NOT MANUAL CREATION 
+    // gltfLoader.load('/models/michelle_the_teenage_girl.glb', (gltf) => {
+    //   const model = gltf.scene;
+    //   model.scale.set(3, 3, 3);
+    //   model.position.set(0, -6, 0);
+      
+
+    //   model.traverse((obj) => {
+    //     if (obj instanceof THREE.Mesh) {
+    //       obj.castShadow = true;
+    //       obj.receiveShadow = true;
+    //     }
+    //   });
+
+    //   scene.add(model);
+    // });
 
     // Skeleton helper
     const skeletonHelper = new THREE.SkeletonHelper(avatar);
@@ -130,7 +148,6 @@ export default function AvatarFBX({ bvhQueue = [] }: { bvhQueue?: string[] }) {
     });
 
     // ADD TREE MODEL
-    const gltfLoader = new GLTFLoader();
     gltfLoader.load('/environment/tree.glb', (gltf) => {
       const tree = gltf.scene;
       tree.position.set(10, -7.3, -10); // Adjust position (Y to match ground)
