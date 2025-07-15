@@ -26,6 +26,9 @@ export default function AppSidebar() {
     const avatarRef = useRef<any>(null);
     const [selectedChat, setSelectedChat] = useState(null);
     const [bvhQueue, setBvhQueue] = useState<string[]>([]);
+    const [selectedPersona, setSelectedPersona] = useState(null);
+    const [route_id, setRouteId] = useState<number | null>(null);
+
     const handleNewChat = () => {
         chatRef.current?.resetChat();
         avatarRef.current?.resetBVH();
@@ -47,17 +50,22 @@ export default function AppSidebar() {
         setBvhQueue([bvh]);
     };
 
+    const handlePersonaSelect = (persona: string, route_id: number) => {
+        setSelectedPersona(persona);
+        setRouteId(route_id);
+    };
+
     return (
         <Suspense fallback={<Loader />}>
             <div className="flex flex-col md:flex-row w-full h-screen">
                 <div className="flex h-20 md:h-screen w-full md:w-auto">
-                    <Sidebar onNewChat={handleNewChat} onChatSelect={handleChatSelect} />
+                    <Sidebar onNewChat={handleNewChat} onChatSelect={handleChatSelect} onPersonaSelect={handlePersonaSelect}  />
                 </div>
                 <div className="flex w-full md:min-w-[400px] md:w-[1000px] h-[60vh] md:h-screen bg-gray-100 dark:bg-gray-900 border-t md:border-t-0 md:border-r md:border-l border-gray-200 dark:border-gray-700">
-                    <ChatWindow ref={chatRef} selectedChat={selectedChat} onBVH={handleBVH} onBVHPlay={handleBVHPlay} />
+                    <ChatWindow ref={chatRef} selectedChat={selectedChat} onBVH={handleBVH} onBVHPlay={handleBVHPlay} selectedPersona={selectedPersona} route_id={route_id} />
                 </div>
                 <div className="flex w-full md:w-[700px] md:min-w-[400px] h-[40vh] md:h-screen bg-gray-50 dark:bg-gray-800">
-                    <AvatarFBX bvhQueue={bvhQueue} />
+                    {/* <AvatarFBX bvhQueue={bvhQueue} /> */}
                 </div>
             </div>
         </Suspense>

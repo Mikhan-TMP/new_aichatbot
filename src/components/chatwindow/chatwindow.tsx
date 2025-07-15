@@ -5,8 +5,10 @@ import { FaMicrophoneLines } from "react-icons/fa6";
 import { FaUserSecret } from "react-icons/fa6";
 import { IoSend } from "react-icons/io5";
 import React, { useEffect, useState, Suspense, useRef, useImperativeHandle, forwardRef } from 'react';
-// import { bouncy } from 'ldrs'
-import { backendUrl, motionUrl } from "@/config";
+import { FaCircleUser } from "react-icons/fa6";
+import { backendUrl, motionUrl, route1, route2 } from "@/config";
+
+
 
 type Message = {
     sender: string;
@@ -32,81 +34,17 @@ interface ChatWindowProps {
     selectedChat: any;
     onBVH?: (bvh: string | string[]) => void;
     onBVHPlay?: (bvh: string) => void; // <-- Add this
+    selectedPersona: string;
+    route_id?: number;
 }
 
 
-function renderMessageText(text: string) {
-    // Try to match numbered list items in a single line
-    // Example: 1. Item one 2. Item two 3. Item three
-    const numberedListPattern = /(\d+\.\s[^(\d+\.\s)]+)/g;
-    const matches = text.match(numberedListPattern);
 
-    if (matches && matches.length > 1) {
-        // If multiple numbered items found, render as <ol>
-        return (
-            <ol className="list-decimal ml-6">
-                {matches.map((item, idx) => (
-                    <li key={idx} className="text-sm font-normal py-2.5 text-gray-900 dark:text-white">
-                        {item.replace(/^\d+\.\s/, '').trim()}
-                    </li>
-                ))}
-            </ol>
-        );
-    }
-
-    // Fallback: handle multi-line lists (bullets or numbers)
-    const lines = text.split('\n');
-    const elements: any[] = [];
-    let currentList: any[] = [];
-    let currentType: 'ul' | 'ol' | null = null;
-
-    function flushList() {
-        if (!currentList.length) return null;
-        const list = currentType === 'ol'
-            ? <ol className="list-decimal ml-6">{currentList.map((li, i) => <li key={i}>{li}</li>)}</ol>
-            : <ul className="list-disc ml-6">{currentList.map((li, i) => <li key={i}>{li}</li>)}</ul>;
-        currentList = [];
-        return list;
-    }
-
-    lines.forEach((line, idx) => {
-        const match = line.match(/^(\s*)([-*•]|\d+\.)\s+(.*)$/);
-        if (match) {
-            const isOrdered = !!match[2].match(/^\d+\.$/);
-            const content = match[3];
-
-            if (currentType && ((isOrdered && currentType !== 'ol') || (!isOrdered && currentType !== 'ul'))) {
-                const flushed = flushList();
-                if (flushed) elements.push(flushed);
-                currentType = isOrdered ? 'ol' : 'ul';
-            }
-            if (!currentType) {
-                currentType = isOrdered ? 'ol' : 'ul';
-            }
-            currentList.push(content);
-        } else {
-            if (currentList.length) {
-                const flushed = flushList();
-                if (flushed) elements.push(flushed);
-                currentType = null;
-            }
-            if (line.trim()) {
-                elements.push(<p key={idx} className="text-sm font-normal py-2.5 text-gray-900 dark:text-white">{line}</p>);
-            }
-        }
-    });
-    if (currentList.length) {
-        const flushed = flushList();
-        if (flushed) elements.push(flushed);
-    }
-    return <>{elements}</>;
-}
 
 
 const ChatWindow = forwardRef<{ resetChat: () => void; loadChat: (chat: any) => void }, ChatWindowProps>(
-    ({ selectedChat, onBVH, onBVHPlay }, ref) => {
-    // const email = props.email;
-    const [lastMotions, setLastMotions] = useState<string[]>([]); // <-- Add this
+    ({ selectedChat, onBVH, onBVHPlay, selectedPersona, route_id }, ref) => {
+    const [lastMotions, setLastMotions] = useState<string[]>([]); 
     const [sessionId, setSessionId] = useState(Date.now().toString());
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
@@ -114,6 +52,26 @@ const ChatWindow = forwardRef<{ resetChat: () => void; loadChat: (chat: any) => 
     const [messages, setMessages] = useState<Message[]>([]);
     const chatEndRef = useRef<HTMLDivElement | null>(null);
     const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const [prevPersona, setPrevPersona] = useState(selectedPersona);
+
+    useEffect(() => {
+    console.log("Route ID changed to:", route_id);
+    }, [route_id]);
+    useEffect(() => {
+        if (prevPersona && selectedPersona && prevPersona !== selectedPersona) {
+            const confirmed = window.confirm(
+                `You are about to switch persona from "${prevPersona}" to "${selectedPersona}". This will clear the current chat.`
+            );
+            if (confirmed) {
+                setMessages([]);
+                setSessionId(Date.now().toString());
+                setPrevPersona(selectedPersona);
+            }
+        } else if (!prevPersona && selectedPersona) {
+            setPrevPersona(selectedPersona);
+        }
+    }, [selectedPersona]);
+
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages, loading]);
@@ -122,7 +80,7 @@ const ChatWindow = forwardRef<{ resetChat: () => void; loadChat: (chat: any) => 
         if (selectedChat) {
             setMessages(selectedChat.messages.map(m => ({
                 sender: m.sender === "sent" ? "user" : m.sender === "received" ? "ai" : m.sender,
-                name: selectedChat.name || "Instructor",
+                name: selectedChat.name || selectedPersona,
                 time: new Date(m.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
                 text: m.text
             })));
@@ -186,15 +144,31 @@ const ChatWindow = forwardRef<{ resetChat: () => void; loadChat: (chat: any) => 
             synth.speak(utterance);
         }
     }
+
+    
+    const Routes = [
+        {
+            route_id: 1,
+            route: route1
+        },
+        {
+            route_id: 2,
+            route: route2
+        }
+    ];
+
     
     async function handleSend() {
         const trimmedMessage = input.trim();
         if (!trimmedMessage) return;
-
-        // Add user message to chat
+        
+        if (!selectedPersona) {
+            alert("Please select a persona before sending a message.");
+            return;
+        }
         const userMsg = {
             sender: "user",
-            name: email,
+            name: "You",
             time: time,
             text: trimmedMessage
         };
@@ -204,6 +178,14 @@ const ChatWindow = forwardRef<{ resetChat: () => void; loadChat: (chat: any) => 
 
         const controller = new AbortController();
         const id = setTimeout(() => controller.abort(), 10 * 1000);
+        console.log ("routeId: " + route_id);
+        if (!route_id){
+            alert("Route Problem occured. Please check your internet connection.");
+            return;
+        };
+        const selectedRoute = Routes.find(r => r.route_id === route_id)?.route;
+        // BACKLOG
+        // CHANGE THE URL BASED ON THE ROUTE ID
         try {
             const response = await fetch(
                 backendUrl + "/api/query/query_router",
@@ -219,7 +201,6 @@ const ChatWindow = forwardRef<{ resetChat: () => void; loadChat: (chat: any) => 
             );
             const data = await response.json();
             clearTimeout(id);
-            //check if data.answer exist
             if (!data.answer || data.answer.includes("[ERROR]") ){
                 setMessages(prev => [
                     ...prev,
@@ -238,19 +219,9 @@ const ChatWindow = forwardRef<{ resetChat: () => void; loadChat: (chat: any) => 
                 const emotionMatch = answer.match(/^\(([^)]+)\)/);
                 const motionMatch = answer.match(/{{([^}]+)}}/);
 
-                // const emotion = emotionMatch ? emotionMatch[1] : null;
-                // const motion = motionMatch ? motionMatch[1] : null;
-
-                // // Remove emotion and motion from the answer
-                // answer = answer.replace(/^\([^)]+\)\s*/, '').replace(/^{{[^}]+}}\s*/, '');
-
-                // //remove the motionmatches from the answer as well
-                // motionMatches.forEach(motion => {
-                //     answer = answer.replace(`{{${motion}}}`, '');
-                // });
                 const aiMsg = {
                     sender: "ai",
-                    name: "Instructor",
+                    name: selectedPersona,
                     time: time,
                     text: answer
                 };
@@ -258,7 +229,6 @@ const ChatWindow = forwardRef<{ resetChat: () => void; loadChat: (chat: any) => 
                 speakText(answer, emotionMatch ? emotionMatch[1] : null)
 
                 if (motionMatches.length > 0) {
-                    // Fetch all BVH files in order
                     Promise.all(
                         motionMatches.map(motion =>
                             fetch(motionUrl + "/generate_bvh", {
@@ -278,21 +248,19 @@ const ChatWindow = forwardRef<{ resetChat: () => void; loadChat: (chat: any) => 
                         )
                     ).then(bvhFiles => {
                         const validBvhFiles = bvhFiles.filter(bvh => bvh && bvh.startsWith("HIERARCHY") && bvh.includes("MOTION"));
-                        setLastMotions(validBvhFiles); // <-- Only valid BVH files
-                        // Remove this to avoid auto-play:
-                        // if (validBvhFiles.length > 0) onBVH?.(validBvhFiles);
+                        setLastMotions(validBvhFiles);
+
                     });
                 }
                 
             }
-            // Add AI response to chat
         } catch (err) {
             if (err.name === 'AbortError') {
                 setMessages(prev => [
                     ...prev,
                     {
                         sender: "ai",
-                        name: "Instructor",
+                        name: selectedPersona,
                         time: time,
                         text: "Error: Could not reach server in time."
                     }
@@ -302,7 +270,7 @@ const ChatWindow = forwardRef<{ resetChat: () => void; loadChat: (chat: any) => 
                     ...prev,
                     {
                         sender: "ai",
-                        name: "Instructor",
+                        name: selectedPersona,
                         time: time,
                         text: "Error: Could not reach server."
                     }
@@ -324,15 +292,19 @@ const ChatWindow = forwardRef<{ resetChat: () => void; loadChat: (chat: any) => 
             content: msg.text
         }));
     }
+
+
+    
     return (
         <div className="flex flex-col w-full">
-
             {/* CONTENT */}
             <div className="flex flex-col flex-1">
                 {/* TOP CONTENT */}
                 <div className="p-5 flex gap-2 items-center border-b border-gray-200 dark:border-gray-700" >
                     <RiRobot3Fill className="text-3xl" />
-                    <h5 className=" text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Ai Chat Assistant</h5>
+                        <h5 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+                        {selectedPersona || "Select a Persona"}
+                    </h5>
                 </div>
                 {/* CHAT CONTENT */}
                 <div className="flex flex-col space-y-4 p-10 h-[calc(100vh-160px)] overflow-y-scroll scrollbar-thumb-gray-900 scrollbar-track-gray-700 scrollbar-thin">
@@ -344,21 +316,18 @@ const ChatWindow = forwardRef<{ resetChat: () => void; loadChat: (chat: any) => 
                                         <span className="text-sm font-semibold text-gray-900 dark:text-white">{msg.name}</span>
                                         <span className="text-sm font-normal text-gray-500 dark:text-gray-400">{msg.time}</span>
                                     </div>
-                                    {renderMessageText(msg.text)}
-                                    {/* <p className="text-sm font-normal py-2.5 text-gray-900 dark:text-white">{msg.text}</p> */}
+                                    {/* {renderMessageText(msg.text)} */}
+                                    <p className="text-sm font-normal py-2.5 text-gray-900 dark:text-white">{msg.text}</p>
                                     <span className="text-sm font-normal text-gray-500 dark:text-gray-400">Delivered</span>
                                 </div>
-                                <FaUserSecret className="w-8 h-8" />
+                                <FaCircleUser className="w-8 h-8" />
                             </div>
                         ) : (
                             <div key={idx} className="flex items-start gap-2.5 justify-start">
                                 <FaUserSecret className="w-8 h-8" />
                                 <div className="flex flex-col w-full max-w-[380px] leading-1.5 p-4 border-gray-200 bg-gray-100 rounded-e-xl rounded-es-xl dark:bg-gray-700">
                                     <span className="text-sm font-semibold text-gray-900 dark:text-white">{msg.name}</span>
-                                    {/* Render AI message text */}
-                                    {renderMessageText(msg.text)}
-
-                                    {/* --- Add this block: Play buttons for each motion step --- */}
+                                    <p className="text-sm font-normal py-2.5 text-gray-900 dark:text-white">{msg.text}</p>
                                     {idx === messages.length - 1 && lastMotions.length > 0 && (
                                         <div className="mt-2 flex flex-wrap gap-2">
                                             {lastMotions.map((bvh, motionIdx) => (
@@ -385,7 +354,7 @@ const ChatWindow = forwardRef<{ resetChat: () => void; loadChat: (chat: any) => 
                             <FaUserSecret className="w-8 h-8" />
                             <div className="flex flex-col w-full max-w-[380px] leading-1.5 p-4 border-gray-200 bg-gray-100 rounded-e-xl rounded-es-xl dark:bg-gray-700">
                                 <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                                    <span className="text-sm font-semibold text-gray-900 dark:text-white">Instructor</span>
+                                    <span className="text-sm font-semibold text-gray-900 dark:text-white">{selectedPersona}</span>
                                     <span className="text-sm font-normal text-gray-500 dark:text-gray-400">{new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                                 </div>
                                 <p className="text-sm font-normal py-2.5 text-gray-900 dark:text-white">
@@ -421,7 +390,7 @@ const ChatWindow = forwardRef<{ resetChat: () => void; loadChat: (chat: any) => 
                             disabled={loading}
                         />
                     </div>
-                    <button className="cursor-pointer p-3 border border-gray-200 rounded-sm" onClick={handleSend} disabled={loading || !input.trim()}>
+                    <button className="cursor-pointer p-3 border border-gray-200 rounded-sm" onClick={handleSend} disabled={loading || !input.trim() || !selectedPersona}>
                         <IoSend className="w-4 h-4" />
                     </button>
                 </div>

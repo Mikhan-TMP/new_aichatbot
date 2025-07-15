@@ -8,10 +8,25 @@ import { GiMagicHat } from "react-icons/gi";
 import { TiThMenu } from "react-icons/ti";
 import { backendUrl } from "@/config";
 import React, { useEffect, useState } from "react";
+import { GiTeacher } from "react-icons/gi";
+import { PiChefHatDuotone } from "react-icons/pi";
+import { GiPoliceOfficerHead } from "react-icons/gi";
+import { MdFireTruck } from "react-icons/md";
+import { GoCopilot } from "react-icons/go";
+import { GiGuitarHead } from "react-icons/gi";
+import { FaRunning } from "react-icons/fa";
+import { MdScience } from "react-icons/md";
+import { BiSolidBusiness } from "react-icons/bi";
+import { IoMdFitness } from "react-icons/io";
+import { GrYoga } from "react-icons/gr";
+import { RiBoxingFill } from "react-icons/ri";
+import { ImManWoman } from "react-icons/im";
+
 
 interface SidebarProps {
     onNewChat?: () => void;
     onChatSelect?: (chat: ChatSession) => void; 
+    onPersonaSelect?: (persona: string, route_id: number) => void;
     email?: string;
 }
 type ChatSession = {
@@ -25,29 +40,94 @@ type ChatSession = {
     }[];
 };
 
-const Sidebar: React.FC<SidebarProps> = ({ onNewChat, onChatSelect }) => {
-    // const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-    const email = "tyalcabedos@gmail.com";
-    const [recentChats, setRecentChats] = useState<ChatSession[]>([]);
+const Sidebar: React.FC<SidebarProps> = ({ onNewChat, onChatSelect, onPersonaSelect }) => {
+    const Persona =[
+        { 
+            name: "Teacher", 
+            id: 1, 
+            icon: <GiTeacher />,
+            route_id: 1
+        },
+        { 
+            name: "Chef", 
+            id: 2,
+            icon: <PiChefHatDuotone />,
+            route_id: 1
+        },
+        { 
+            name: "Police Officer", 
+            id: 3, 
+            icon: <GiPoliceOfficerHead />,
+            route_id: 1
+        },
+        { 
+            name: "Firefighter", 
+            id: 4, 
+            icon: <MdFireTruck />,
+            route_id: 1
+        },
+        { 
+            name: "Pilot", 
+            id: 5, 
+            icon: <GoCopilot />,
+            route_id: 1
+        },
+        { 
+            name: "Musician", 
+            id: 6, 
+            icon: <GiGuitarHead />,
+            route_id: 1
+        },
+        { 
+            name: "Athlete", 
+            id: 7, 
+            icon: <FaRunning />,
+            route_id: 1
+        },
+        { 
+            name: "Scientist", 
+            id: 8, 
+            icon: <MdScience />,
+            route_id: 1
+        },
+        { 
+            name: "Businessman", 
+            id: 9, 
+            icon: <BiSolidBusiness />,
+            route_id: 1
+        },
+        { 
+            name: "Fitness Instructor", 
+            id: 10, 
+            icon: <IoMdFitness />,
+            route_id: 2
+        },
+        { 
+            name: "Yoga Instructor", 
+            id: 11, 
+            icon: <GrYoga />,
+            route_id: 2
+        },
+        { 
+            name: "Boxer", 
+            id: 12, 
+            icon: <RiBoxingFill />,
+            route_id: 1
+        },
+        { 
+            name: "Dancer", 
+            id: 13, 
+            icon: <ImManWoman />,
+            route_id: 1
+        },
+    ];
 
-    useEffect(() => {
-        if (!email) return;
-        async function fetchChatHistory() {
-            try {
-                const res = await fetch(`${backendUrl}/api/chat/get-chat-history?email=${encodeURIComponent(email)}`);
-                const data = await res.json();
-                console.log(data);
-                if (Array.isArray(data)) {
-                    setRecentChats(data);
-                } else if (data) {
-                    setRecentChats([data]);
-                }
-            } catch (err) {
-                setRecentChats([]);
-            }
-        }
-        fetchChatHistory();
-    }, [email]);
+    const [activePersona, setActivePersona] = useState<string | null>(null);
+
+    const handlePersonaClick = (name: string, route_id: number) => {
+        setActivePersona(name);
+        onPersonaSelect?.(name, route_id);
+    };
 
     return (
         <div className="flex h-screen">
@@ -71,64 +151,26 @@ const Sidebar: React.FC<SidebarProps> = ({ onNewChat, onChatSelect }) => {
                 {/* MENU */}
                 <ul className="pt-4 mt-4 space-y-2 font-medium ">
                     <li className="cursor-pointer">
-                        <button
-                            type="button"
-                            onClick={onNewChat}
-                            className="cursor-pointer flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group w-full"
-                        >
-                            <MdAddComment />
-                            <span className="ms-3">New Chat</span>
-                        </button>
+                        <span className="text-sm font-normal text-gray-500 dark:text-gray-400">Select a Persona</span>
                     </li>
-                    <li>
-                        <a
-                            href="#"
-                            className="flex items-center p-2 text-gray-900 rounded-lg dark:text-white bg-blue-100 dark:bg-blue-900 font-semibold hover:bg-blue-200 dark:hover:bg-blue-800 group"
-                        >
-                            <svg className="shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 18 18">
-                                <path d="M6.143 0H1.857A1.857 1.857 0 0 0 0 1.857v4.286C0 7.169.831 8 1.857 8h4.286A1.857 1.857 0 0 0 8 6.143V1.857A1.857 1.857 0 0 0 6.143 0Zm10 0h-4.286A1.857 1.857 0 0 0 10 1.857v4.286C10 7.169 10.831 8 11.857 8h4.286A1.857 1.857 0 0 0 18 6.143V1.857A1.857 1.857 0 0 0 16.143 0Zm-10 10H1.857A1.857 1.857 0 0 0 0 11.857v4.286C0 17.169.831 18 1.857 18h4.286A1.857 1.857 0 0 0 8 16.143v-4.286A1.857 1.857 0 0 0 6.143 10Zm10 0h-4.286A1.857 1.857 0 0 0 10 11.857v4.286c0 1.026.831 1.857 1.857 1.857h4.286A1.857 1.857 0 0 0 18 16.143v-4.286A1.857 1.857 0 0 0 16.143 10Z"/>
-                            </svg>
-                            <span className="flex-1 ms-3 whitespace-nowrap">Current Chat</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" className="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                        <RiChatHistoryFill />
-                        <span className="flex-1 ms-3 whitespace-nowrap">Chat History</span>
-                        <span className="inline-flex items-center justify-center w-3 h-3 p-3 ms-3 text-sm font-medium text-blue-800 bg-blue-100 rounded-full dark:bg-blue-900 dark:text-blue-300">3</span>
-                        </a>
-                    </li>
-                </ul>
-                {/* RECENT CHATS */}
-                <ul className="h-[50vh] overflow-y-scroll pt-4 mt-4 space-y-2 font-medium border-t border-gray-200 dark:border-gray-700 scrollbar-none">
-                    <p className="px-3 text-xs text-gray-400 dark:text-gray-400">Recent Chats</p>
-                    {recentChats.length === 0 && (
-                        <li>
-                            <span className="ms-3 text-xs text-gray-400">No recent chats found</span>
-                        </li>
-                    )}
-                    {recentChats.map(chat => (
-                        <li key={chat.sessionId}>
-                            <a
-                                href="#"
-                                className="flex items-center p-2 text-gray-900 transition duration-75 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white group"
-                                onClick={e => {
-                                    e.preventDefault();
-                                    onChatSelect?.(chat); 
-                                }}
+                    {Persona.map((item) => (
+                        <li key={item.id}>
+                            <button
+                            onClick={() => handlePersonaClick(item.name, item.route_id)}
+                            className={`flex border text-start cursor-pointer items-center p-2 rounded-lg w-full ${
+                                activePersona === item.name
+                                ? 'bg-green-100 dark:bg-green-800 text-green-700 dark:text-white'
+                                : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                            }`}
                             >
-                                <div className="flex flex-col">
-                                    <span className="ms-3">{chat.name || (chat.messages[0]?.text?.slice(0, 30) || "New Chat")}</span>
-                                    <span className="ms-3 text-xs text-gray-400">
-                                        {chat.messages.length > 0
-                                            ? new Date(chat.messages[chat.messages.length - 1].timestamp).toLocaleString()
-                                            : "No messages"}
-                                    </span>
-                                </div>
-                            </a>
+                            {item.icon}
+                            <span className="flex-1 ms-3 whitespace-nowrap">{item.name}</span>
+                            </button>
                         </li>
                     ))}
+
                 </ul>
+
                 {/* SIDEBAR BOTTOM */}
                 <ul className="pt-4 mt-4 space-y-2 font-medium border-t border-gray-200 dark:border-gray-700">
                     <li>
